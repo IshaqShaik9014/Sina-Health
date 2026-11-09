@@ -1,0 +1,15 @@
+{
+  "name": "sina-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SINA - Smart Integrated Network for Healthcare Access",
+  "scripts": {
+    "dev:server": "pnpm --prefix server dev",
+    "dev:client": "pnpm --prefix client dev",
+    "build:server": "pnpm --prefix server build",
+    "build:client": "pnpm --prefix client build",
+    "db:generate": "pnpm --prefix server prisma:generate",
+    "db:push": "pnpm --prefix server prisma:push",
+    "db:seed": "pnpm --prefix server prisma:seed"
+  }
+}

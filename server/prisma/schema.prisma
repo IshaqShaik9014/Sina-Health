@@ -1,0 +1,414 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  HOSPITAL_ADMIN
+  DOCTOR
+  PHARMACIST
+  PATIENT
+}
+
+enum OrgType {
+  HOSPITAL
+  PHARMACY
+}
+
+enum PharmacyType {
+  COMMUNITY
+  HOSPITAL
+}
+
+enum OrgStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+}
+
+enum EncounterType {
+  OUTPATIENT
+  INPATIENT
+  EMERGENCY
+  FOLLOW_UP
+}
+
+enum PrescriptionStatus {
+  CREATED
+  ACTIVE
+  PARTIALLY_DISPENSED
+  DISPENSED
+  COMPLETED
+  CANCELLED
+}
+
+enum RequestStatus {
+  PENDING_PATIENT_CONSENT
+  PATIENT_APPROVED
+  PATIENT_REJECTED
+  PENDING_FACILITY_APPROVAL
+  FACILITY_APPROVED
+  FACILITY_REJECTED
+  EXPIRED
+  REVOKED
+}
+
+enum AuditStatus {
+  SUCCESS
+  DENIED
+}
+
+model User {
+  id              String        @id @default(uuid())
+  email           String        @unique
+  passwordHash    String
+  firstName       String
+  lastName        String
+  role            Role
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  phone           String?
+  licenseNumber   String?       // For Doctors & Pharmacists
+  specialty       String?       // For Doctors
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relationships
+  patientProfile  Patient?      @relation("UserPatientProfile")
+  doctorEncounters Encounter[]  @relation("DoctorEncounters")
+  prescriptions   Prescription[] @relation("DoctorPrescriptions")
+  dispensings     DispensingRecord[] @relation("PharmacistDispensings")
+  adrReports      AdverseDrugReaction[] @relation("ReporterADR")
+  accessRequests  RecordAccessRequest[] @relation("RequestingDoctor")
+  auditLogs       AuditLog[]
+
+  @@index([email])
+  @@index([role])
+  @@index([organizationId])
+}
+
+model Organization {
+  id            String         @id @default(uuid())
+  name          String
+  type          OrgType
+  licenseNumber String         @unique
+  address       String
+  phone         String
+  email         String
+  status        OrgStatus      @default(APPROVED)
+  pharmacyType  PharmacyType?  // If type == PHARMACY
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  users         User[]
+  departments   Department[]
+  encounters    Encounter[]
+  prescriptions Prescription[]
+  dispensings   DispensingRecord[]
+  sourceRequests RecordAccessRequest[] @relation("SourceFacility")
+  targetRequests RecordAccessRequest[] @relation("TargetFacility")
+  accessGrants  AccessGrant[]
+  auditLogs     AuditLog[]
+  registeredPatients Patient[] @relation("PrimaryFacility")
+
+  @@index([type])
+  @@index([status])
+}
+
+model Department {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  code           String
+  description    String?
+  createdAt      DateTime     @default(now())
+
+  encounters     Encounter[]
+
+  @@unique([organizationId, code])
+}
+
+model Patient {
+  id                String       @id @default(uuid())
+  sinaId            String       @unique // E.g. SINA-PAT-2026-000001
+  userId            String?      @unique
+  user              User?        @relation("UserPatientProfile", fields: [userId], references: [id])
+  firstName         String
+  lastName          String
+  dob               DateTime
+  gender            String
+  bloodGroup        String?
+  phone             String
+  email             String?
+  address           String
+  emergencyContactName String
+  emergencyContactPhone String
+  primaryFacilityId String?
+  primaryFacility   Organization? @relation("PrimaryFacility", fields: [primaryFacilityId], references: [id])
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  allergies         PatientAllergy[]
+  conditions        MedicalCondition[]
+  encounters        Encounter[]
+  prescriptions     Prescription[]
+  dispensings       DispensingRecord[]
+  adrReports        AdverseDrugReaction[]
+  accessRequests    RecordAccessRequest[]
+  accessGrants      AccessGrant[]
+  auditLogs         AuditLog[]
+
+  @@index([sinaId])
+  @@index([lastName, firstName])
+  @@index([phone])
+}
+
+model PatientAllergy {
+  id          String   @id @default(uuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  allergen    String
+  severity    String   // MILD, MODERATE, SEVERE
+  reaction    String
+  recordedAt  DateTime @default(now())
+
+  @@index([patientId])
+}
+
+model MedicalCondition {
+  id             String   @id @default(uuid())
+  patientId      String
+  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  conditionName  String
+  icd10Code      String?
+  diagnosedDate  DateTime
+  status         String   // ACTIVE, MANAGED, RESOLVED
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  @@index([patientId])
+}
+
+model Encounter {
+  id              String        @id @default(uuid())
+  patientId       String
+  patient         Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId        String
+  doctor          User          @relation("DoctorEncounters", fields: [doctorId], references: [id])
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  departmentId    String?
+  department      Department?   @relation(fields: [departmentId], references: [id])
+  encounterType   EncounterType @default(OUTPATIENT)
+  chiefComplaint  String
+  
+  // Vital Signs
+  bpSys           Int?
+  bpDia           Int?
+  heartRate       Int?
+  tempCelsius     Float?
+  respRate        Int?
+  o2Saturation    Int?
+  
+  physicalExam    String?
+  treatmentPlan   String?
+  notes           String?
+  startedAt       DateTime      @default(now())
+  endedAt         DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  diagnoses       Diagnosis[]
+  investigations  Investigation[]
+  prescriptions   Prescription[]
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([organizationId])
+  @@index([startedAt])
+}
+
+model Diagnosis {
+  id          String    @id @default(uuid())
+  encounterId String
+  encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  patientId   String
+  code        String    // ICD-10 code
+  description String
+  isDefinitive Boolean  @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@index([encounterId])
+  @@index([patientId])
+}
+
+model Investigation {
+  id           String    @id @default(uuid())
+  encounterId  String
+  encounter    Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  patientId    String
+  testName     String
+  category     String    // LAB, RADIOLOGY, SEROLOGY
+  status       String    // ORDERED, COMPLETED, CANCELLED
+  resultSummary String?
+  referenceRange String?
+  reportUrl    String?
+  performedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([encounterId])
+  @@index([patientId])
+}
+
+model Prescription {
+  id             String             @id @default(uuid())
+  encounterId    String?
+  encounter      Encounter?         @relation(fields: [encounterId], references: [id])
+  patientId      String
+  patient        Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId       String
+  doctor         User               @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  status         PrescriptionStatus @default(ACTIVE)
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  items          PrescriptionItem[]
+  dispensings    DispensingRecord[]
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+model PrescriptionItem {
+  id             String       @id @default(uuid())
+  prescriptionId String
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  medicationName String
+  genericName    String?
+  strength       String       // e.g. 500mg
+  dosage         String       // e.g. 1 tablet
+  frequency      String       // e.g. Twice daily
+  route          String       // Oral, IV, Topical
+  durationDays   Int
+  quantity       Int
+  instructions   String?
+  remainingQty   Int
+
+  @@index([prescriptionId])
+}
+
+model DispensingRecord {
+  id             String       @id @default(uuid())
+  prescriptionId String
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id])
+  pharmacistId   String
+  pharmacist     User         @relation("PharmacistDispensings", fields: [pharmacistId], references: [id])
+  pharmacyId     String
+  pharmacy       Organization @relation(fields: [pharmacyId], references: [id])
+  patientId      String
+  patient        Patient      @relation(fields: [patientId], references: [id])
+  dispensedQty   Int
+  dispensedNotes String?
+  dispensedAt    DateTime     @default(now())
+
+  @@index([prescriptionId])
+  @@index([pharmacistId])
+  @@index([patientId])
+}
+
+model AdverseDrugReaction {
+  id             String       @id @default(uuid())
+  patientId      String
+  patient        Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  reporterId     String
+  reporter       User         @relation("ReporterADR", fields: [reporterId], references: [id])
+  pharmacyId     String?
+  medicationName String
+  severity       String       // MILD, MODERATE, SEVERE, LIFE_THREATENING
+  symptoms       String
+  onsetDate      DateTime
+  reportedAt     DateTime     @default(now())
+
+  @@index([patientId])
+}
+
+model RecordAccessRequest {
+  id                 String        @id @default(uuid())
+  patientId          String
+  patient            Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  requestingOrgId    String
+  requestingOrg      Organization  @relation("TargetFacility", fields: [requestingOrgId], references: [id])
+  requestingDoctorId String
+  requestingDoctor   User          @relation("RequestingDoctor", fields: [requestingDoctorId], references: [id])
+  sourceOrgId        String
+  sourceOrg          Organization  @relation("SourceFacility", fields: [sourceOrgId], references: [id])
+  purpose            String
+  requestedCategories String       // Comma-separated: ENCOUNTERS,PRESCRIPTIONS,LABS,DIAGNOSES
+  status             RequestStatus @default(PENDING_PATIENT_CONSENT)
+  patientDecisionAt  DateTime?
+  facilityDecisionAt DateTime?
+  expiresAt          DateTime
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  accessGrant        AccessGrant?
+
+  @@index([patientId])
+  @@index([requestingOrgId])
+  @@index([sourceOrgId])
+  @@index([status])
+}
+
+model AccessGrant {
+  id                String              @id @default(uuid())
+  requestId         String              @unique
+  request           RecordAccessRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  patientId         String
+  patient           Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  grantedOrgId      String
+  grantedOrg        Organization        @relation(fields: [grantedOrgId], references: [id])
+  allowedCategories String
+  validFrom         DateTime            @default(now())
+  validUntil        DateTime
+  isRevoked         Boolean             @default(false)
+  revokedAt         DateTime?
+  createdAt         DateTime            @default(now())
+
+  @@index([patientId])
+  @@index([grantedOrgId])
+}
+
+model AuditLog {
+  id             String       @id @default(uuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  userRole       Role
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  patientId      String?
+  patient        Patient?     @relation(fields: [patientId], references: [id])
+  action         String       // VIEW_PATIENT_TIMELINE, CREATE_PRESCRIPTION, PHARMACY_LOOKUP, CONSENT_GRANTED, etc.
+  recordCategory String       // DEMOGRAPHICS, CLINICAL_ENCOUNTER, PRESCRIPTIONS, AUDIT_TRAIL
+  purpose        String?
+  ipAddress      String?
+  userAgent      String?
+  status         AuditStatus  @default(SUCCESS)
+  timestamp      DateTime     @default(now())
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([patientId])
+  @@index([timestamp])
+}

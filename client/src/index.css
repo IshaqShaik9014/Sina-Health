@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-clinical-bg: 245 248 250;
+    --color-clinical-surface: 255 255 255;
+    --color-clinical-border: 229 234 238;
+    --color-clinical-teal: 23 107 104;
+  }
+
+  body {
+    background-color: #F5F8FA;
+    color: #1C2935;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Unslop Rule: Tabular numbers for measurements, vitals, analytics */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Custom scrollbars that stay quiet */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
