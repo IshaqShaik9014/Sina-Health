@@ -198,7 +198,7 @@ export class PrescriptionRepository {
       return dispensing;
     }
 
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: any) => {
       const dispensing = await tx.dispensingRecord.create({
         data: {
           prescriptionId: data.prescriptionId,

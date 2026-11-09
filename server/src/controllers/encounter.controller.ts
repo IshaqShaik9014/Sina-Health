@@ -9,9 +9,23 @@ export class EncounterController {
     try {
       const data = CreateEncounterSchema.parse(req.body);
       const encounter = await encounterRepository.create({
-        ...data,
+        patientId: data.patientId,
         doctorId: req.user!.id,
         organizationId: req.user!.organizationId!,
+        departmentId: data.departmentId,
+        encounterType: data.encounterType,
+        chiefComplaint: data.chiefComplaint,
+        bpSys: data.bpSys,
+        bpDia: data.bpDia,
+        heartRate: data.heartRate,
+        tempCelsius: data.tempCelsius,
+        respRate: data.respRate,
+        o2Saturation: data.o2Saturation,
+        physicalExam: data.physicalExam,
+        treatmentPlan: data.treatmentPlan,
+        notes: data.notes,
+        diagnoses: data.diagnoses,
+        investigations: data.investigations,
       });
 
       await logAuditEvent({

@@ -195,7 +195,7 @@ export class ConsentRepository {
       });
     }
 
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: any) => {
       const updatedReq = await tx.recordAccessRequest.update({
         where: { id: requestId },
         data: {
