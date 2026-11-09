@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/v1/:match*",
-      "destination": "https://sina-api.onrender.com/api/v1/:match*"
+      "destination": "https://sina-health.onrender.com/api/v1/:match*"
     },
     {
       "source": "/(.*)",

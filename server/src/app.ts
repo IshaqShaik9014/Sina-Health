@@ -8,7 +8,18 @@ import { ENV } from './config/env';
 const app = express();
 
 app.use(cors({
-  origin: [ENV.CLIENT_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1') ||
+      origin.includes('vercel.app') ||
+      (ENV.CLIENT_URL && origin === ENV.CLIENT_URL)
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true,
 }));
 
