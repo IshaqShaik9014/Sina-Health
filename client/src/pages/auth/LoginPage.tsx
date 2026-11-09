@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Activity, ShieldCheck, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 import { Role } from '../../types';
@@ -145,6 +145,13 @@ export const LoginPage: React.FC = () => {
             >
               Sign in as Super Administrator (Al-Farabi Ibn Sina)
             </button>
+          </div>
+
+          <div className="pt-3 border-t border-clinical-border text-center text-xs text-clinical-text-secondary">
+            <span>New patient or healthcare facility? </span>
+            <Link to="/signup" className="text-clinical-teal font-medium hover:underline">
+              Create an account
+            </Link>
           </div>
         </div>
       </div>

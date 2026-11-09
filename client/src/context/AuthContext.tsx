@@ -8,6 +8,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  registerPatient: (data: any) => Promise<any>;
+  registerStaff: (data: any) => Promise<any>;
   quickLoginAs: (role: Role) => Promise<void>;
   logout: () => void;
 }
@@ -59,6 +61,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const registerPatient = async (data: any) => {
+    setIsLoading(true);
+    try {
+      const response: any = await api.post('/auth/register/patient', data);
+      if (response.success && response.data) {
+        const { token: receivedToken, user: receivedUser, patient } = response.data;
+        localStorage.setItem('sina_token', receivedToken);
+        setToken(receivedToken);
+        setUser(receivedUser);
+        return { user: receivedUser, patient };
+      } else {
+        throw new Error(response.error || 'Patient registration failed');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const registerStaff = async (data: any) => {
+    setIsLoading(true);
+    try {
+      const response: any = await api.post('/auth/register/staff', data);
+      if (response.success && response.data) {
+        const { token: receivedToken, user: receivedUser } = response.data;
+        localStorage.setItem('sina_token', receivedToken);
+        setToken(receivedToken);
+        setUser(receivedUser);
+        return { user: receivedUser };
+      } else {
+        throw new Error(response.error || 'Staff registration failed');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const quickLoginAs = async (role: Role) => {
     let email = 'dr.chen@sina.health'; // Default doctor
     if (role === 'PHARMACIST') email = 'pharm.city@sina.health';
@@ -83,6 +121,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isLoading,
         login,
+        registerPatient,
+        registerStaff,
         quickLoginAs,
         logout,
       }}

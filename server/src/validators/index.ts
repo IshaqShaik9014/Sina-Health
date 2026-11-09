@@ -95,3 +95,35 @@ export const DispenseMedicationSchema = z.object({
   dispensedQty: z.number().int().positive(),
   dispensedNotes: z.string().optional(),
 });
+
+export const PatientSignupSchema = z.object({
+  email: z.string().email('Valid email address required'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  dob: z.string().refine((val) => !isNaN(Date.parse(val)), 'Valid date of birth required'),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
+  bloodGroup: z.string().optional(),
+  phone: z.string().min(7, 'Valid contact phone number required'),
+  address: z.string().min(3, 'Residential address is required'),
+  emergencyContactName: z.string().min(1, 'Emergency contact name required'),
+  emergencyContactPhone: z.string().min(7, 'Emergency contact phone required'),
+  primaryFacilityId: z.string().optional(),
+  allergies: z.array(z.object({
+    allergen: z.string(),
+    severity: z.enum(['MILD', 'MODERATE', 'SEVERE']),
+    reaction: z.string(),
+  })).optional(),
+});
+
+export const StaffSignupSchema = z.object({
+  email: z.string().email('Valid email address required'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  phone: z.string().min(7, 'Phone number required').optional(),
+  role: z.enum(['DOCTOR', 'PHARMACIST', 'HOSPITAL_ADMIN']),
+  organizationId: z.string().optional(),
+  licenseNumber: z.string().min(3, 'Professional license number required'),
+  specialty: z.string().optional(),
+});

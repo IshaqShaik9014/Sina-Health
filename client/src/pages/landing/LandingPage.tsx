@@ -53,12 +53,12 @@ export const LandingPage: React.FC = () => {
             >
               Sign in
             </Link>
-            <button
-              onClick={() => handleQuickEnter('DOCTOR', '/doctor')}
-              className="h-8 px-3 sm:px-3.5 rounded-control bg-clinical-teal hover:bg-clinical-teal-hover text-white font-medium transition-colors text-[11px] sm:text-xs"
+            <Link
+              to="/signup"
+              className="h-8 px-3 sm:px-3.5 rounded-control bg-clinical-teal hover:bg-clinical-teal-hover text-white font-medium transition-colors text-[11px] sm:text-xs flex items-center justify-center shadow-subtle"
             >
-              Live console
-            </button>
+              Register
+            </Link>
           </div>
         </div>
       </header>

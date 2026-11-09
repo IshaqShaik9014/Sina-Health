@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { authService } from '../services/auth.service';
-import { LoginSchema } from '../validators';
+import { LoginSchema, PatientSignupSchema, StaffSignupSchema } from '../validators';
 import { AuthRequest } from '../types';
+import { Role } from '@prisma/client';
 
 export class AuthController {
   async login(req: Request, res: Response) {
@@ -25,6 +26,72 @@ export class AuthController {
       res.status(400).json({
         success: false,
         error: error.message || 'Authentication failed',
+      });
+    }
+  }
+
+  async registerPatient(req: Request, res: Response) {
+    try {
+      const parsed = PatientSignupSchema.parse(req.body);
+      const result = await authService.registerPatient(parsed);
+
+      res.cookie('sina_session', result.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      res.status(201).json({
+        success: true,
+        data: result,
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        error: error.message || 'Patient registration failed',
+      });
+    }
+  }
+
+  async registerStaff(req: Request, res: Response) {
+    try {
+      const parsed = StaffSignupSchema.parse(req.body);
+      const result = await authService.registerStaff({
+        ...parsed,
+        role: parsed.role as Role,
+      });
+
+      res.cookie('sina_session', result.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      res.status(201).json({
+        success: true,
+        data: result,
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        error: error.message || 'Staff registration failed',
+      });
+    }
+  }
+
+  async getFacilities(_req: Request, res: Response) {
+    try {
+      const facilities = await authService.getPublicFacilities();
+      res.status(200).json({
+        success: true,
+        data: facilities,
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        error: error.message || 'Failed to fetch healthcare facilities',
       });
     }
   }

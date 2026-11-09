@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppLayout } from './layouts/AppLayout';
 import { LandingPage } from './pages/landing/LandingPage';
 import { LoginPage } from './pages/auth/LoginPage';
+import { SignupPage } from './pages/auth/SignupPage';
 import { DoctorWorkstation } from './pages/doctor/DoctorWorkstation';
 import { PharmacyConsole } from './pages/pharmacy/PharmacyConsole';
 import { PatientPortal } from './pages/patient/PatientPortal';
@@ -36,6 +37,7 @@ export const App: React.FC = () => {
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
 
           {/* Clinical Workstation Routes */}
           <Route
